@@ -63,82 +63,81 @@ struct dht_sensor_data *ICACHE_FLASH_ATTR DHTRead(void) {
 
 struct dht_sensor_data *ICACHE_FLASH_ATTR DHTCb(void)
 {
-	int counter = 0;
+        int counter = 0;
 	int laststate = 1;
 	int i = 0;
-    int j = 0;
-    int checksum = 0;
-    int data[100];
-    data[0] = data[1] = data[2] = data[3] = data[4] = 0;
+        int j = 0;
+        int checksum = 0;
+        int data[100];
+        data[0] = data[1] = data[2] = data[3] = data[4] = 0;
 
-    // Wake up device, 250ms of high
-    GPIO_OUTPUT_SET(DHT_PIN, 1);
-    sleepms(250);
-    // Hold low for 20ms
-    GPIO_OUTPUT_SET(DHT_PIN, 0);
-    sleepms(20);
-    // High for 40ns
-    GPIO_OUTPUT_SET(DHT_PIN, 1);
-    os_delay_us(40);
-    // Set DHT_PIN pin as an input
-    GPIO_DIS_OUTPUT(DHT_PIN);
+        // Wake up device, 250ms of high
+        GPIO_OUTPUT_SET(DHT_PIN, 1);
+        sleepms(250);
+        // Hold low for 20ms
+        GPIO_OUTPUT_SET(DHT_PIN, 0);
+        sleepms(20);
+        // High for 40ns
+        GPIO_OUTPUT_SET(DHT_PIN, 1);
+        os_delay_us(40);
+        // Set DHT_PIN pin as an input
+        GPIO_DIS_OUTPUT(DHT_PIN);
 
-    // wait for pin to drop?
-    while (GPIO_INPUT_GET(DHT_PIN) == 1 && i < DHT_MAXCOUNT) {
-          os_delay_us(1);
-          i++;
-    }
+        // wait for pin to drop?
+        while (GPIO_INPUT_GET(DHT_PIN) == 1 && i < DHT_MAXCOUNT) {
+                os_delay_us(1);
+                i++;
+        }
 
-    if(i == DHT_MAXCOUNT) {
-        reading.success = 0;
-        os_printf("Failed to get reading, dying\r\n");
-        return;
-    }
+        if(i == DHT_MAXCOUNT) {
+                reading.success = 0;
+                os_printf("Failed to get reading, dying\r\n");
+                return;
+        }
 
-    // read data
-    for (i = 0; i < DHT_MAXTIMINGS; i++)
-    {
-        // Count high time (in approx us)
-        counter = 0;
-        while (GPIO_INPUT_GET(DHT_PIN) == laststate)
+        // read data
+        for (i = 0; i < DHT_MAXTIMINGS; i++)
         {
-            counter++;
-            os_delay_us(1);
-            if (counter == 1000)
-                break;
+                // Count high time (in approx us)
+                counter = 0;
+                while (GPIO_INPUT_GET(DHT_PIN) == laststate)
+                {
+                        counter++;
+                        os_delay_us(1);
+                        if (counter == 1000)
+                                break;
+                }
+                laststate = GPIO_INPUT_GET(DHT_PIN);
+                if (counter == 1000)
+                        break;
+                // store data after 3 reads
+                if ((i>3) && (i%2 == 0)) {
+                        // shove each bit into the storage bytes
+                        data[j/8] <<= 1;
+                        if (counter > DHT_BREAKTIME)
+                                data[j/8] |= 1;
+                        j++;
+                }
         }
-        laststate = GPIO_INPUT_GET(DHT_PIN);
-        if (counter == 1000)
-        	break;
-        // store data after 3 reads
-        if ((i>3) && (i%2 == 0)) {
-            // shove each bit into the storage bytes
-            data[j/8] <<= 1;
-            if (counter > DHT_BREAKTIME)
-                data[j/8] |= 1;
-            j++;
-        }
-    }
 
-    if (j >= 39) {
-        checksum = (data[0] + data[1] + data[2] + data[3]) & 0xFF;
-        os_printf("DHT: %02x %02x %02x %02x [%02x] CS: %02x", data[0], data[1],data[2],data[3],data[4],checksum);
-        if (data[4] == checksum) {
-            // checksum is valid
-        	reading.temperature = scale_temperature(data);
-        	reading.humidity = scale_humidity(data);
-        	os_printf("Temperature =  %d *C, Humidity = %d %%\r\n", (int)(reading.temperature * 100), (int)(reading.humidity * 100));
-            reading.success = 1;
+        if (j >= 39) {
+                checksum = (data[0] + data[1] + data[2] + data[3]) & 0xFF;
+                os_printf("DHT: %02x %02x %02x %02x [%02x] CS: %02x", data[0], data[1],data[2],data[3],data[4],checksum);
+                if (data[4] == checksum) {
+                        // checksum is valid
+                        reading.temperature = scale_temperature(data);
+                        reading.humidity = scale_humidity(data);
+                        os_printf("Temperature =  %d *C, Humidity = %d %%\r\n", (int)(reading.temperature * 100), (int)(reading.humidity * 100));
+                        reading.success = 1;
+                } else {
+                        os_printf("Checksum was incorrect after %d bits. Expected %d but got %d\r\n", j, data[4], checksum);
+                        reading.success = 0;
+                }
         } else {
-            os_printf("Checksum was incorrect after %d bits. Expected %d but got %d\r\n", j, data[4], checksum);
-            reading.success = 0;
+                os_printf("Got too few bits: %d should be at least 40\r\n", j);
+                reading.success = 0;
         }
-    } else {
-    	os_printf("Got too few bits: %d should be at least 40\r\n", j);
-        reading.success = 0;
-
-    }
-    return;
+        return;
 }
 
 void ICACHE_FLASH_ATTR DHTInit(enum DHTType dht_type, uint32_t poll_time)
