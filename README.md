@@ -8,9 +8,9 @@ ESP8266 - Driver for the temperature and humidity sensor DHT11 and DHT22
 Вывод 4 DHT22 (GND) подключен к GND ESP-01<br>
 Между выводом Vcc и DATA_OUT необходимо подключить подтягивающий резистор 5 кОм.<br><br>
 
-#Таблица соответствия виртуальных выводов реальным:
+<b>Таблица соответствия виртуальных выводов реальным:</b>
 
-<a id="new_gpio_map"></a>
+<a id="gpio_map"></a>
 <table>
   <tr>
     <th scope="col">IO index</th><th scope="col">ESP8266 pin</th><th scope="col">IO index</th><th scope="col">ESP8266 pin</th>
@@ -40,7 +40,7 @@ ESP8266 - Driver for the temperature and humidity sensor DHT11 and DHT22
     <td>7</td><td>GPIO13</td><td></td><td></td>
    </tr>
 </table>
-### [*] D0(GPIO16) can only be used as gpio read/write. no interrupt supported. no pwm/i2c/ow supported.
+<b>[*] D0(GPIO16) can only be used as gpio read/write. no interrupt supported. no pwm/i2c/ow supported.</b>
 
 <b>Сборка под Windows:</b><br>
 1. <a href="http://programs74.ru/get.php?file=EspressifESP8266DevKitX86">Скачайте</a> и установите компилятор и SDK.<br>
@@ -65,11 +65,11 @@ DHT22 1 (Vcc) to Vcc (3.3 Volts) ESP-01<br>
 DHT22 2 (DATA_OUT) to GPIO2 ESP-01<br>
 DHT22 3 (NC)<br>
 DHT22 4 (GND) to GND ESP-01<br>
-Between the terminal Vcc and DATA_OUT need to connect a pullup resistor of 5 Kohms.
+Between the terminal Vcc and DATA_OUT need to connect a pullup resistor of 5 Kohms.<br><br>
 
-#GPIO table
+<b>GPIO table</b>
 
-<a id="new_gpio_map"></a>
+<a id="gpio_map"></a>
 <table>
   <tr>
     <th scope="col">IO index</th><th scope="col">ESP8266 pin</th><th scope="col">IO index</th><th scope="col">ESP8266 pin</th>
@@ -99,7 +99,7 @@ Between the terminal Vcc and DATA_OUT need to connect a pullup resistor of 5 Koh
     <td>7</td><td>GPIO13</td><td></td><td></td>
    </tr>
 </table>
-### [*] D0(GPIO16) can only be used as gpio read/write. no interrupt supported. no pwm/i2c/ow supported.
+<b>[*] D0(GPIO16) can only be used as gpio read/write. no interrupt supported. no pwm/i2c/ow supported.</b><br>
 
 <b>Building on Windows:</b><br>
 1. <a href="http://programs74.ru/get.php?file=EspressifESP8266DevKitX86">Download</a> and install compiler and SDK.<br>
