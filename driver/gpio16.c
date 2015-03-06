@@ -1,24 +1,43 @@
+/*
+    Driver for GPIO
+    Official repository: https://github.com/CHERTS/esp8266-gpio16
+
+    Copyright (C) 2015 Mikhail Grigorev (CHERTS)
+
+    Pin number:
+    -----------
+    Pin 0 = GPIO16
+    Pin 1 = GPIO5
+    Pin 2 = GPIO4
+    Pin 3 = GPIO0
+    Pin 4 = GPIO2
+    Pin 5 = GPIO14
+    Pin 6 = GPIO12
+    Pin 7 = GPIO13
+    Pin 8 = GPIO15
+    Pin 9 = GPIO3
+    Pin 10 = GPIO1
+    Pin 11 = GPIO9
+    Pin 12 = GPIO10
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License along
+    with this program; if not, write to the Free Software Foundation, Inc.,
+    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+*/
+
 #include "ets_sys.h"
 #include "osapi.h"
 #include "driver/gpio16.h"
-
-/*
- *  Pin number:
- *  -----------
- *  Pin 0 = GPIO16
- *  Pin 1 = GPIO5
- *  Pin 2 = GPIO4
- *  Pin 3 = GPIO0
- *  Pin 4 = GPIO2
- *  Pin 5 = GPIO14
- *  Pin 6 = GPIO12
- *  Pin 7 = GPIO13
- *  Pin 8 = GPIO15
- *  Pin 9 = GPIO3
- *  Pin 10 = GPIO1
- *  Pin 11 = GPIO9
- *  Pin 12 = GPIO10
- */
 
 uint8_t pin_num[GPIO_PIN_NUM];
 uint8_t pin_func[GPIO_PIN_NUM];
@@ -45,37 +64,37 @@ GPIO_INT_TYPE pin_int_type[GPIO_PIN_NUM] = {
 
 void ICACHE_FLASH_ATTR gpio16_output_conf(void)
 {
-    WRITE_PERI_REG(PAD_XPD_DCDC_CONF,
+	WRITE_PERI_REG(PAD_XPD_DCDC_CONF,
                    (READ_PERI_REG(PAD_XPD_DCDC_CONF) & 0xffffffbc) | (uint32)0x1); 	// mux configuration for XPD_DCDC to output rtc_gpio0
 
-    WRITE_PERI_REG(RTC_GPIO_CONF,
+	WRITE_PERI_REG(RTC_GPIO_CONF,
                    (READ_PERI_REG(RTC_GPIO_CONF) & (uint32)0xfffffffe) | (uint32)0x0);	//mux configuration for out enable
 
-    WRITE_PERI_REG(RTC_GPIO_ENABLE,
+	WRITE_PERI_REG(RTC_GPIO_ENABLE,
                    (READ_PERI_REG(RTC_GPIO_ENABLE) & (uint32)0xfffffffe) | (uint32)0x1);	//out enable
 }
 
 void ICACHE_FLASH_ATTR gpio16_output_set(uint8 value)
 {
-    WRITE_PERI_REG(RTC_GPIO_OUT,
+	WRITE_PERI_REG(RTC_GPIO_OUT,
                    (READ_PERI_REG(RTC_GPIO_OUT) & (uint32)0xfffffffe) | (uint32)(value & 1));
 }
 
 void ICACHE_FLASH_ATTR gpio16_input_conf(void)
 {
-    WRITE_PERI_REG(PAD_XPD_DCDC_CONF,
+	WRITE_PERI_REG(PAD_XPD_DCDC_CONF,
                    (READ_PERI_REG(PAD_XPD_DCDC_CONF) & 0xffffffbc) | (uint32)0x1); 	// mux configuration for XPD_DCDC and rtc_gpio0 connection
 
-    WRITE_PERI_REG(RTC_GPIO_CONF,
+	WRITE_PERI_REG(RTC_GPIO_CONF,
                    (READ_PERI_REG(RTC_GPIO_CONF) & (uint32)0xfffffffe) | (uint32)0x0);	//mux configuration for out enable
 
-    WRITE_PERI_REG(RTC_GPIO_ENABLE,
+	WRITE_PERI_REG(RTC_GPIO_ENABLE,
                    READ_PERI_REG(RTC_GPIO_ENABLE) & (uint32)0xfffffffe);	//out disable
 }
 
 uint8 ICACHE_FLASH_ATTR gpio16_input_get(void)
 {
-    return (uint8)(READ_PERI_REG(RTC_GPIO_IN_DATA) & 1);
+	return (uint8)(READ_PERI_REG(RTC_GPIO_IN_DATA) & 1);
 }
 
 int ICACHE_FLASH_ATTR set_gpio_mode(unsigned pin, unsigned mode, unsigned pull)
@@ -145,26 +164,26 @@ int ICACHE_FLASH_ATTR set_gpio_mode(unsigned pin, unsigned mode, unsigned pull)
 
 int ICACHE_FLASH_ATTR gpio_write(unsigned pin, unsigned level)
 {
-  if (pin >= GPIO_PIN_NUM)
-    return -1;
-  if(pin == 0){
-    gpio16_output_conf();
-    gpio16_output_set(level);
-    return 1;
-  }
-  GPIO_OUTPUT_SET(GPIO_ID_PIN(pin_num[pin]), level);
+	if (pin >= GPIO_PIN_NUM)
+		return -1;
+	if(pin == 0){
+		gpio16_output_conf();
+		gpio16_output_set(level);
+		return 1;
+	}
+	GPIO_OUTPUT_SET(GPIO_ID_PIN(pin_num[pin]), level);
 }
 
 int ICACHE_FLASH_ATTR gpio_read(unsigned pin)
 {
-  if (pin >= GPIO_PIN_NUM)
-    return -1;
-  if(pin == 0){
-    // gpio16_input_conf();
-    return 0x1 & gpio16_input_get();
-  }
-  // GPIO_DIS_OUTPUT(pin_num[pin]);
-  return 0x1 & GPIO_INPUT_GET(GPIO_ID_PIN(pin_num[pin]));
+	if (pin >= GPIO_PIN_NUM)
+		return -1;
+	if(pin == 0){
+		// gpio16_input_conf();
+		return 0x1 & gpio16_input_get();
+	}
+	// GPIO_DIS_OUTPUT(pin_num[pin]);
+	return 0x1 & GPIO_INPUT_GET(GPIO_ID_PIN(pin_num[pin]));
 }
 
 #ifdef GPIO_INTERRUPT_ENABLE
@@ -174,6 +193,8 @@ void ICACHE_FLASH_ATTR gpio_intr_dispatcher(gpio_intr_handler cb)
 	uint32 gpio_status = GPIO_REG_READ(GPIO_STATUS_ADDRESS);
 	for (i = 0; i < GPIO_PIN_NUM; i++) {
 		if (pin_int_type[i] && (gpio_status & BIT(pin_num[i])) ) {
+			//disable global interrupt
+			ETS_GPIO_INTR_DISABLE();
 			//disable interrupt
 			gpio_pin_intr_state_set(GPIO_ID_PIN(pin_num[i]), GPIO_PIN_INTR_DISABLE);
 			//clear interrupt status
@@ -182,7 +203,10 @@ void ICACHE_FLASH_ATTR gpio_intr_dispatcher(gpio_intr_handler cb)
 			if(cb){
 				cb(i, level);
 			}
+			//enable interrupt
 			gpio_pin_intr_state_set(GPIO_ID_PIN(pin_num[i]), pin_int_type[i]);
+			//enable global interrupt
+			ETS_GPIO_INTR_ENABLE();
 		}
 	}
 }
@@ -192,16 +216,35 @@ void ICACHE_FLASH_ATTR gpio_intr_attach(gpio_intr_handler cb)
 	ETS_GPIO_INTR_ATTACH(gpio_intr_dispatcher, cb);
 }
 
+int ICACHE_FLASH_ATTR gpio_intr_deattach(unsigned pin)
+{
+	if (pin >= GPIO_PIN_NUM)
+		return -1;
+	//disable global interrupt
+	ETS_GPIO_INTR_DISABLE();
+	//clear interrupt status
+	GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, BIT(pin_num[pin]));
+	pin_int_type[pin] = GPIO_PIN_INTR_DISABLE;
+	//disable interrupt
+	gpio_pin_intr_state_set(GPIO_ID_PIN(pin_num[pin]), pin_int_type[pin]);
+	//enable global interrupt
+	ETS_GPIO_INTR_ENABLE();
+	return 1;
+}
+
 int ICACHE_FLASH_ATTR gpio_intr_init(unsigned pin, GPIO_INT_TYPE type)
 {
 	if (pin >= GPIO_PIN_NUM)
 		return -1;
+	//disable global interrupt
 	ETS_GPIO_INTR_DISABLE();
 	//clear interrupt status
 	GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, BIT(pin_num[pin]));
 	pin_int_type[pin] = type;
 	//enable interrupt
 	gpio_pin_intr_state_set(GPIO_ID_PIN(pin_num[pin]), type);
+	//enable global interrupt
 	ETS_GPIO_INTR_ENABLE();
+	return 1;
 }
 #endif
