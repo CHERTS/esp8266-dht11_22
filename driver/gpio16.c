@@ -35,6 +35,13 @@ uint8_t pin_func[GPIO_PIN_NUM] = {0, FUNC_GPIO5, FUNC_GPIO4, FUNC_GPIO0,
 								  FUNC_GPIO2,  FUNC_GPIO14,  FUNC_GPIO12,  FUNC_GPIO13,
 								  FUNC_GPIO15,  FUNC_GPIO3,  FUNC_GPIO1, FUNC_GPIO9,
 								  FUNC_GPIO10};
+#ifdef GPIO_INTERRUPT_ENABLE
+GPIO_INT_TYPE pin_int_type[GPIO_PIN_NUM] = {
+								GPIO_PIN_INTR_DISABLE, GPIO_PIN_INTR_DISABLE, GPIO_PIN_INTR_DISABLE, GPIO_PIN_INTR_DISABLE,
+								GPIO_PIN_INTR_DISABLE, GPIO_PIN_INTR_DISABLE, GPIO_PIN_INTR_DISABLE, GPIO_PIN_INTR_DISABLE,
+								GPIO_PIN_INTR_DISABLE, GPIO_PIN_INTR_DISABLE, GPIO_PIN_INTR_DISABLE, GPIO_PIN_INTR_DISABLE,
+								GPIO_PIN_INTR_DISABLE};
+#endif
 
 void ICACHE_FLASH_ATTR gpio16_output_conf(void)
 {
@@ -108,6 +115,9 @@ int ICACHE_FLASH_ATTR set_gpio_mode(unsigned pin, unsigned mode, unsigned pull)
 			break;
 		case GPIO_OUTPUT:
 			ETS_GPIO_INTR_DISABLE();
+#ifdef GPIO_INTERRUPT_ENABLE
+			pin_int_type[pin] = GPIO_PIN_INTR_DISABLE;
+#endif
 			PIN_FUNC_SELECT(pin_mux[pin], pin_func[pin]);
 			//disable interrupt
 			gpio_pin_intr_state_set(GPIO_ID_PIN(pin_num[pin]), GPIO_PIN_INTR_DISABLE);
@@ -116,6 +126,17 @@ int ICACHE_FLASH_ATTR set_gpio_mode(unsigned pin, unsigned mode, unsigned pull)
 			GPIO_REG_WRITE(GPIO_PIN_ADDR(GPIO_ID_PIN(pin_num[pin])), GPIO_REG_READ(GPIO_PIN_ADDR(GPIO_ID_PIN(pin_num[pin]))) & (~ GPIO_PIN_PAD_DRIVER_SET(GPIO_PAD_DRIVER_ENABLE))); //disable open drain;
 			ETS_GPIO_INTR_ENABLE();
 			break;
+#ifdef GPIO_INTERRUPT_ENABLE
+		case GPIO_INT:
+			ETS_GPIO_INTR_DISABLE();
+			PIN_FUNC_SELECT(pin_mux[pin], pin_func[pin]);
+			GPIO_DIS_OUTPUT(pin_num[pin]);
+			gpio_register_set(GPIO_PIN_ADDR(GPIO_ID_PIN(pin_num[pin])), GPIO_PIN_INT_TYPE_SET(GPIO_PIN_INTR_DISABLE)
+                        | GPIO_PIN_PAD_DRIVER_SET(GPIO_PAD_DRIVER_DISABLE)
+                        | GPIO_PIN_SOURCE_SET(GPIO_AS_PIN_SOURCE));
+			ETS_GPIO_INTR_ENABLE();
+			break;
+#endif
 		default:
 			break;
 	}
@@ -145,3 +166,42 @@ int ICACHE_FLASH_ATTR gpio_read(unsigned pin)
   // GPIO_DIS_OUTPUT(pin_num[pin]);
   return 0x1 & GPIO_INPUT_GET(GPIO_ID_PIN(pin_num[pin]));
 }
+
+#ifdef GPIO_INTERRUPT_ENABLE
+void ICACHE_FLASH_ATTR gpio_intr_dispatcher(gpio_intr_handler cb)
+{
+	uint8 i, level;
+	uint32 gpio_status = GPIO_REG_READ(GPIO_STATUS_ADDRESS);
+	for (i = 0; i < GPIO_PIN_NUM; i++) {
+		if (pin_int_type[i] && (gpio_status & BIT(pin_num[i])) ) {
+			//disable interrupt
+			gpio_pin_intr_state_set(GPIO_ID_PIN(pin_num[i]), GPIO_PIN_INTR_DISABLE);
+			//clear interrupt status
+			GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, gpio_status & BIT(pin_num[i]));
+			level = 0x1 & GPIO_INPUT_GET(GPIO_ID_PIN(pin_num[i]));
+			if(cb){
+				cb(i, level);
+			}
+			gpio_pin_intr_state_set(GPIO_ID_PIN(pin_num[i]), pin_int_type[i]);
+		}
+	}
+}
+
+void ICACHE_FLASH_ATTR gpio_intr_attach(gpio_intr_handler cb)
+{
+	ETS_GPIO_INTR_ATTACH(gpio_intr_dispatcher, cb);
+}
+
+int ICACHE_FLASH_ATTR gpio_intr_init(unsigned pin, GPIO_INT_TYPE type)
+{
+	if (pin >= GPIO_PIN_NUM)
+		return -1;
+	ETS_GPIO_INTR_DISABLE();
+	//clear interrupt status
+	GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, BIT(pin_num[pin]));
+	pin_int_type[pin] = type;
+	//enable interrupt
+	gpio_pin_intr_state_set(GPIO_ID_PIN(pin_num[pin]), type);
+	ETS_GPIO_INTR_ENABLE();
+}
+#endif

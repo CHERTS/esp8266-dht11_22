@@ -1,6 +1,9 @@
 /*
     Driver for the temperature and humidity sensor DHT11 and DHT22
-    Official repository: https://github.com/CHERTS/esp8266-dht11_22
+
+    Version 1.0
+
+    The official repository of version 2.0 here https://github.com/CHERTS/esp8266-dht11_22
 
     Copyright (C) 2014 Mikhail Grigorev (CHERTS)
 
